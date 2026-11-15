@@ -193,7 +193,7 @@ def fetch_external_catalogs(ra_str, dec_str, fov_arcmin):
     except Exception:
         pass
     try:
-        vv_w = Vizier(columns=['RAJ2000', 'DEJ2000', 'W1mag'], row_limit=40, vizier_server="vizier.cfa.harvard.edu")
+        v_w = Vizier(columns=['RAJ2000', 'DEJ2000', 'W1mag'], row_limit=40, vizier_server="vizier.cfa.harvard.edu")
         res_w = v_w.query_region(coord, radius=rad, catalog='II/328/allwise')
         if len(res_w) > 0:
             wise_df = res_w.to_pandas()
