@@ -820,7 +820,6 @@ with tab_spec:
     ax_lc.grid(True, alpha=0.15)
     st.pyplot(fig_lc)
     plt.close(fig_lc)
-
 # --- TAB 4: INTERACTIVE CDS ALADIN LITE SKY SURVEY ---
 with tab_aladin:
     st.subheader("Interactive CDS Aladin Lite Sky Survey")
@@ -833,7 +832,7 @@ with tab_aladin:
 
     aladin_direct_url = (
         f"https://unistra.fr"
-        f"?target={ra_deg:.6f}%20{dec_deg:+.6f}&fov={fov_deg}&survey=CDS%2FP%2FallWISE%2Fcolor"
+        f"?target={ra_deg:.6f}%20{dec_deg:+.6f}&fov={fov_deg}"
     )
 
     c_al1, c_al2 = st.columns([2.5, 1])
@@ -908,7 +907,7 @@ with tab_aladin:
                 A.init.then(() => {{
                     document.getElementById('status-msg').style.display = 'none';
                     const aladin = A.aladin('#aladin-lite-div', {{
-                        survey: 'CDS/P/allWISE/color',
+                        survey: 'https://esa.int',
                         fov: {fov_deg * 1.6},
                         target: '{ra_deg} {dec_deg}',
                         cooFrame: 'ICRSd',
