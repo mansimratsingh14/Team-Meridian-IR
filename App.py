@@ -714,7 +714,6 @@ with tab_diff:
     if len(dates) < 2:
         st.warning("Only 1 epoch is available for this target. At least 2 epochs are required for meaningful subtraction.")
     c_a, c_b, c_op = st.columns(3)
-    c_a, c_b, c_op = st.columns(3)
     idx_a = c_a.selectbox("Select Epoch A (Baseline)", range(len(dates)), index=0, format_func=lambda i: f"Epoch {i+1} (MJD {dates[i]})")
     idx_b = c_b.selectbox("Select Epoch B (Comparison)", range(len(dates)), index=len(dates)-1, format_func=lambda i: f"Epoch {i+1} (MJD {dates[i]})")
     op_type = c_op.radio("Operation", ["Subtract (Epoch B − Epoch A)", "Add / Coadd (Epoch A + Epoch B)"], horizontal=True)
