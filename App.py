@@ -807,35 +807,35 @@ with tab_spec:
     st.pyplot(fig_lc)
     plt.close(fig_lc)
 
-# --- TAB 4: CDS ALADIN LITE SKY SURVEY ---
+
 # --- TAB 4: CDS ALADIN LITE SKY SURVEY ---
 with tab_aladin:
     st.subheader("Interactive CDS Aladin Lite Sky Survey")
     st.caption("Compare SPHEREx cutouts against archival multi-wavelength surveys (DSS2, 2MASS, AllWISE) via CDS Aladin.")
     target_coord = parse_sky_coord(ra_input, dec_input)
     aladin_html = f"""
+    <link rel="stylesheet" href="https://unistra.fr" />
     <div id="aladin-lite-div" style="width:100%; height:520px; border-radius:8px; overflow:hidden;"></div>
-    <script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
+    <script type="text/javascript" src="https://jquery.com"></script>
+    <script type="text/javascript" src="https://unistra.fr" charset="utf-8"></script>
     <script type="text/javascript">
-        let aladin;
-        A.init.then(() => {{
-            aladin = A.aladin('#aladin-lite-div', {{
-                survey: 'CDS/P/allWISE/color',
-                fov: {fov_arcmin / 60.0:.4f},
-                target: '{target_coord.ra.deg:.6f} {target_coord.dec.deg:.6f}',
-                showReticle: true,
-                showZoomControl: true,
-                showFullscreenControl: true,
-                showLayersControl: true,
-                showGotoControl: true
-            }});
-            const cat = A.catalog({{name: 'Selected Target', sourceSize: 16, color: '{accent_color}'}});
-            aladin.addCatalog(cat);
-            cat.addSources([A.marker({target_coord.ra.deg:.6f}, {target_coord.dec.deg:.6f}, {{popupTitle: {json.dumps(selected_target)}, popupDesc: 'RA: {ra_input}<br>Dec: {dec_input}'}})]);
+        var aladin = A.aladin('#aladin-lite-div', {{
+            survey: 'P/allWISE/color',
+            fov: {fov_arcmin / 60.0:.4f},
+            target: '{target_coord.ra.deg:.6f} {target_coord.dec.deg:.6f}',
+            showReticle: true,
+            showZoomControl: true,
+            showFullscreenControl: true,
+            showLayersControl: true,
+            showGotoControl: true
         }});
+        var cat = A.catalog({{name: 'Selected Target', sourceSize: 16, color: '{accent_color}'}});
+        aladin.addCatalog(cat);
+        cat.addSources([A.marker({target_coord.ra.deg:.6f}, {target_coord.dec.deg:.6f}, {{popupTitle: {json.dumps(selected_target)}, popupDesc: 'RA: {ra_input}<br>Dec: {dec_input}'}})]);
     </script>
     """
     components.html(aladin_html, height=535)
+
 
 
 # --- TAB 5: OBSERVATION NOTES & REPORT BUILDER ---
