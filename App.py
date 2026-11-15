@@ -812,8 +812,7 @@ with tab_aladin:
     st.subheader(" Interactive CDS Aladin Lite Sky Survey")
     st.caption("Compare SPHEREx cutouts against archival multi-wavelength surveys (DSS2, 2MASS, AllWISE) via CDS Aladin.")
     target_coord = parse_sky_coord(ra_input, dec_input)
-    aladin_url = "https://" + f"aladin.cds.unistra.fr/AladinLite/?target={target_coord.ra.deg}%20{target_coord.dec.deg}&fov={fov_arcmin / 60.0}&survey=P%2FallWISE%2Fcolor"
-
+    aladin_url = "https://" + f"aladin.cds.unistra.fr/AladinLite/?target={target_coord.ra.deg:.5f}%20{target_coord.dec.deg:.5f}&fov={fov_arcmin / 60.0:.3f}&survey=P%2FallWISE%2Fcolor"
     components.iframe(aladin_url, height=520)
 
 # --- TAB 5: OBSERVATION NOTES & REPORT BUILDER ---
