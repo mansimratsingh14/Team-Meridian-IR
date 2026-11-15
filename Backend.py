@@ -73,8 +73,14 @@ def fetch_and_process(coord_str, cutout_px=120, max_frames=5, max_spec=12):
     if df is None or len(df) == 0:
         return np.array([]), np.array([]), np.array([]), np.array([]), np.array([])
 
-    df = df.sort_values(by='t_min')
-    df['wave_um'] = pd.to_numeric(df.get('em_min', 1.5), errors='coerce').fillna(1.5)
+    if 't_min' not in df.columns and 'time_bounds_lower' in df.columns:
+        df['t_min'] = df['time_bounds_lower']
+    if 't_min' in df.columns:
+        df = df.sort_values(by='t_min')
+
+    raw_em = pd.to_numeric(df.get('em_min', 1.5), errors='coerce').fillna(1.5)
+    df['wave_um'] = np.where(raw_em < 0.01, raw_em * 1e6, raw_em)
+
 
 
     # Filter to same bandpass and pick well-separated epochs across the full time baseline
