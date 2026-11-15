@@ -821,10 +821,10 @@ with tab_spec:
     st.pyplot(fig_lc)
     plt.close(fig_lc)
     
-# --- TAB 4: INTERACTIVE SKY CONTEXT VIEWER (ESA SKY / ALADIN FALLBACK) ---
+# --- TAB 4: INTERACTIVE MULTI-WAVELENGTH SKY SURVEY (NASA / IRSA CUTOUTS) ---
 with tab_aladin:
-    st.subheader("Interactive Multi-Wavelength Sky Survey")
-    st.caption("Pan, zoom, and switch multi-wavelength surveys (AllWISE, 2MASS, DSS2, Gaia) on the 3D celestial sphere.")
+    st.subheader("Interactive Multi-Wavelength Sky Context (NASA IRSA / SkyView)")
+    st.caption("Compare your SPHEREx region against archival AllWISE Infrared, 2MASS, and DSS2 surveys with exact WCS alignment.")
 
     target_coord = parse_sky_coord(ra_input, dec_input)
     fov_deg = max(0.05, round(fov_arcmin / 60.0, 4))
@@ -836,12 +836,95 @@ with tab_aladin:
         f"&hips=AllWISE+color&fov={fov_deg}&cooframe=J2000&sci=true"
     )
 
-    c_al1, c_al2, c_al3 = st.columns([2.2, 1, 1])
-    c_al1.markdown(f"**Target (ICRS):** `{ra_input}, {dec_input}` (`{ra_deg:.5f}°, {dec_deg:+.5f}°`)  |  **FOV:** `{fov_arcmin}'`")
-    c_al2.link_button("Open ESASky Fullscreen ↗", esasky_url, use_container_width=True)
-    c_al3.link_button("Open CDS Aladin Mirror ↗", "https://unistra.fr", use_container_width=True)
+    c_al1, c_al2, c_al3 = st.columns([1.8, 1, 1])
+    survey_choice = c_al1.selectbox(
+        "Archival Sky Survey Layer",
+        [
+            "WISE 3.4 (AllWISE W1 Infrared)",
+            "WISE 4.6 (AllWISE W2 Cold Objects)",
+            "2MASS-K (Near-Infrared 2.2 um)",
+            "DSS2 Red (Optical Sky Survey)",
+        ],
+        label_visibility="collapsed",
+    )
+    c_al2.link_button("Open ESASky 3D ↗", esasky_url, use_container_width=True)
+    c_al3.link_button("Open CDS Aladin ↗", "https://unistra.fr", use_container_width=True)
 
-    components.iframe(esasky_url, height=580, scrolling=False)
+    @st.cache_data(show_spinner="Fetching NASA Archival Sky Survey Cutout...")
+    def get_nasa_sky_cutout(ra_d, dec_d, fov_arc, survey_str):
+        from astroquery.skyview import SkyView
+        c = SkyCoord(ra_d * u.deg, dec_d * u.deg, frame="icrs")
+        s_key = survey_str.split(" (")[0]
+        try:
+            imgs = SkyView.get_images(
+                position=c,
+                survey=[s_key],
+                radius=(fov_arc * 0.85) * u.arcmin,
+                pixels=300,
+            )
+            if len(imgs) > 0:
+                return imgs[0][0].data, WCS(imgs[0][0].header)
+        except Exception:
+            pass
+        return None, None
+
+    sky_data, sky_wcs = get_nasa_sky_cutout(ra_deg, dec_deg, fov_arcmin, survey_choice)
+
+    if sky_data is not None:
+        s_vmin, s_vmax = ZScaleInterval().get_limits(sky_data)
+        fig_sky, ax_sky = plt.subplots(figsize=(6.8, 6.2), dpi=high_res_dpi, facecolor=bg_hex)
+        ax_sky.set_facecolor(bg_hex)
+        im_sky = ax_sky.imshow(
+            sky_data,
+            cmap="inferno" if "WISE" in survey_choice or "2MASS" in survey_choice else "gray",
+            origin="lower",
+            vmin=s_vmin,
+            vmax=s_vmax,
+        )
+
+        # Draw exact SPHEREx FOV bounding box onto the archival survey
+        ny, nx = sky_data.shape
+        scx_s, scy_s = nx / 2.0, ny / 2.0
+        px_scale_arcmin = (fov_arcmin * 1.7) / nx
+        box_half_px = (fov_arcmin / 2.0) / px_scale_arcmin
+
+        rect = plt.Rectangle(
+            (scx_s - box_half_px, scy_s - box_half_px),
+            2 * box_half_px,
+            2 * box_half_px,
+            linewidth=1.8,
+            edgecolor=accent_color,
+            facecolor="none",
+            linestyle="-",
+            label=f"SPHEREx FOV ({fov_arcmin}')",
+        )
+        ax_sky.add_patch(rect)
+        ax_sky.axhline(scy_s, color=accent_color, linestyle="--", linewidth=0.8, alpha=0.6)
+        ax_sky.axvline(scx_s, color=accent_color, linestyle="--", linewidth=0.8, alpha=0.6)
+
+        # Overlay Gaia DR3 & AllWISE catalog sources if enabled
+        if overlay_gaia or overlay_wise:
+            g_df, w_df = fetch_external_catalogs(ra_input, dec_input, fov_arcmin)
+            if overlay_gaia and not g_df.empty and sky_wcs is not None:
+                gx, gy = sky_wcs.world_to_pixel(SkyCoord(g_df["RAJ2000"].values * u.deg, g_df["DEJ2000"].values * u.deg))
+                ax_sky.scatter(gx, gy, s=80, facecolors="none", edgecolors="#00FF88", linewidths=1.2, label="Gaia DR3")
+            if overlay_wise and not w_df.empty and sky_wcs is not None:
+                wx, wy = sky_wcs.world_to_pixel(SkyCoord(w_df["RAJ2000"].values * u.deg, w_df["DEJ2000"].values * u.deg))
+                ax_sky.scatter(wx, wy, s=95, marker="D", facecolors="none", edgecolors="#FF9900", linewidths=1.2, label="AllWISE")
+
+        ax_sky.set_title(f"{survey_choice}  |  ICRS {ra_input}, {dec_input}", color="white", fontsize=10.5)
+        ax_sky.set_xlabel("East ← X (pixels)", color="#A0A0A0")
+        ax_sky.set_ylabel("North ↑ Y (pixels)", color="#A0A0A0")
+        ax_sky.legend(loc="upper right", fontsize=8.5)
+        cbar_s = plt.colorbar(im_sky, ax=ax_sky, fraction=0.046, pad=0.04)
+        cbar_s.set_label("Archival Survey Intensity", color="white", fontsize=9)
+        cbar_s.ax.tick_params(colors="white", labelsize=8)
+        fig_sky.tight_layout()
+        st.pyplot(fig_sky, use_container_width=False)
+        plt.close(fig_sky)
+    else:
+        st.warning("NASA SkyView server is temporarily busy for this coordinate. Click **Open ESASky 3D ↗** above to inspect the region externally.")
+
 
 
 
