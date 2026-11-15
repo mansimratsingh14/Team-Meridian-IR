@@ -828,12 +828,9 @@ with tab_aladin:
 
     target_coord = parse_sky_coord(ra_input, dec_input)
     fov_deg = max(0.05, round(fov_arcmin / 60.0, 4))
-    coord_query = f"{target_coord.ra.deg:.6f}%20{target_coord.dec.deg:+.6f}"
-
-    # Prepend "https://" right before "aladin.cds.unistra.fr" below:
+    coord_query = f"{target_coord.ra.deg:.5f}{target_coord.dec.deg:+.5f}"
     aladin_base = "aladin.cds.unistra.fr/AladinLite/"
-    aladin_url = f"https://{aladin_base}?target={coord_query}&fov={fov_deg}&hips=CDS%2FP%2FallWISE%2Fcolor"
-
+    aladin_url = f"https://{aladin_base}?target={coord_query}&fov={fov_deg}&survey=P%2FallWISE%2Fcolor"%
     components.iframe(aladin_url, height=580, scrolling=False)
 
 
