@@ -193,7 +193,7 @@ def fetch_external_catalogs(ra_str, dec_str, fov_arcmin):
     except Exception:
         pass
     try:
-        v_w = Vizier(columns=['RAJ2000', 'DEJ2000', 'W1mag'], row_limit=40)
+        vv_w = Vizier(columns=['RAJ2000', 'DEJ2000', 'W1mag'], row_limit=40, vizier_server="vizier.cfa.harvard.edu")
         res_w = v_w.query_region(coord, radius=rad, catalog='II/328/allwise')
         if len(res_w) > 0:
             wise_df = res_w.to_pandas()
@@ -510,11 +510,10 @@ else:
 
 
 # 10. Main Workspace Tabs
-tab_blink, tab_diff, tab_spec, tab_aladin, tab_notes = st.tabs([
+tab_blink, tab_diff, tab_spec, tab_notes = st.tabs([
     "Blink Comparator & Overlays",
     "Epoch Addition / Subtraction",
     "102-Band Spectral & Metadata Explorer",
-    "Archival Sky Context (DSS2 & ESASky)", 
     "Observation Reports & Export"
 ])
 
@@ -821,46 +820,9 @@ with tab_spec:
     st.pyplot(fig_lc)
     plt.close(fig_lc)
     
-# --- TAB 4: ARCHIVAL SKY CONTEXT (DSS2 & ESASKY 3D) ---
-with tab_aladin:
-    st.subheader("Archival Sky Survey Context (DSS2 Optical & ESASky 3D)")
-    st.caption("Compare your SPHEREx infrared region against the archival Digitized Sky Survey (DSS2 Red) with exact WCS alignment.")
-
-    target_coord = parse_sky_coord(ra_input, dec_input)
-    fov_deg = max(0.05, round(fov_arcmin / 60.0, 4))
-    ra_deg = target_coord.ra.deg
-    dec_deg = target_coord.dec.deg
-
-    proto = chr(104) + "ttps://"
-    esasky_url = f"{proto}sky.esa.int/esasky/?target={ra_deg:.5f}%20{dec_deg:+.5f}&hips=AllWISE+color&fov={fov_deg}"
-
-    c_al1, c_al2 = st.columns([2.2, 1])
-    c_al1.markdown(f"**Locked Survey:** `DSS2 Red (Optical Sky Survey)`  |  **ICRS:** `{ra_input}, {dec_input}`")
-    c_al2.link_button("Open ESASky 3D Globe", esasky_url, use_container_width=True)
-
-    @st.cache_data(show_spinner="Fetching DSS2 Red Archival Sky Cutout...")
-    def get_dss2_cutout(ra_d, dec_d, fov_arc):
-        from astroquery.skyview import SkyView
-        c = SkyCoord(ra_d * u.deg, dec_d * u.deg, frame="icrs")
-        try:
-            imgs = SkyView.get_images(
-                position=c,
-                survey=["DSS2 Red"],
-                radius=(fov_arc * 0.85) * u.arcmin,
-                pixels=300,
-            )
-            if len(imgs) > 0:
-                return imgs[0][0].data, WCS(imgs[0][0].header)
-        except Exception:
-            pass
-        return None, None
-
-    sky_data, sky_wcs = get_dss2_cutout(ra_deg, dec_deg, fov_arcmin)
 
 
-
-
-# --- TAB 5: OBSERVATION NOTES & REPORT BUILDER ---
+# --- TAB 4: OBSERVATION NOTES & REPORT BUILDER ---
 with tab_notes:
     st.subheader("Observation Log & Discovery Report Builder")
     observer_name = st.text_input("Observer / Team Name", value="Team Meridian IR")
