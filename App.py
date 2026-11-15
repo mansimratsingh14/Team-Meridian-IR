@@ -831,7 +831,6 @@ with tab_aladin:
     ra_deg = target_coord.ra.deg
     dec_deg = target_coord.dec.deg
 
-    # Direct fallback URL (properly URL-encoded with %20 space)
     aladin_direct_url = (
         f"https://unistra.fr"
         f"?target={ra_deg:.6f}%20{dec_deg:+.6f}&fov={fov_deg}&survey=CDS%2FP%2FallWISE%2Fcolor"
@@ -860,6 +859,7 @@ with tab_aladin:
     <html>
     <head>
         <meta charset="utf-8">
+        <base href="https://unistra.frapi/v3/latest/">
         <style>
             html, body {{
                 margin: 0;
@@ -901,7 +901,6 @@ with tab_aladin:
             function startAladin() {{
                 if (initialized) return;
                 const el = document.getElementById('aladin-lite-div');
-                // Wait until the Streamlit tab is visible and has non-zero width
                 if (!el || el.offsetWidth === 0 || el.offsetHeight === 0) return;
                 if (typeof A === 'undefined' || !A.init) return;
 
@@ -951,7 +950,6 @@ with tab_aladin:
                 }});
             }}
 
-            // Poll until user clicks Tab 4 and container becomes visible
             const checkInterval = setInterval(() => {{
                 startAladin();
                 if (initialized) clearInterval(checkInterval);
@@ -964,6 +962,7 @@ with tab_aladin:
     """
 
     components.html(aladin_html, height=565, scrolling=False)
+
 
 
 
