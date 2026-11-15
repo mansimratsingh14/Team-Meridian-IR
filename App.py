@@ -413,7 +413,7 @@ div[data-testid="stDialog"] > div[role="dialog"] {{
     max-width: 1100px !important;
 }}
 
-@import url('htpps://googleapis.com');
+@import url('https://googleapis.com');
 
 html, body, .stApp, [data-testid="stSidebar"], button, input, select, textarea, p, label, table, h1, h2, h3 {{
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
