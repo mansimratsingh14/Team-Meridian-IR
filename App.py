@@ -389,6 +389,11 @@ button[data-baseweb="tab"][aria-selected="true"] p {{
     margin-bottom: 2px;
 }}
 
+section[data-testid="stSidebar"] {{
+    min-width: 440px !important;
+    width: 440px !important;
+}}
+
 div[data-testid="stDialog"] > div[role="dialog"] {{
     width: 75vw !important;
     max-width: 1100px !important;
@@ -396,16 +401,21 @@ div[data-testid="stDialog"] > div[role="dialog"] {{
 
 @import url('https://googleapis.com');
 
-html, body, .stApp, [data-testid="stSidebar"], button, input, select, textarea, p, label, table {{
-    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace !important;
+html, body, .stApp, [data-testid="stSidebar"], button, input, select, textarea, p, label, table, h1, h2, h3 {{
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}}
+code, pre, [data-testid="stMetricValue"] {{
+    font-family: 'JetBrains Mono', monospace !important;
 }}
 [data-testid="stIconMaterial"], .material-symbols-rounded {{
     font-family: 'Material Symbols Rounded' !important;
 }}
-h1, h2, h3, button[data-baseweb="tab"] p {{
-    font-family: 'Space Grotesk', sans-serif !important;
-    letter-spacing: -0.02em;
+button[data-baseweb="tab"] p {{
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em !important;
 }}
+
 
 
 
