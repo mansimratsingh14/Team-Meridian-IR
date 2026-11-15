@@ -547,13 +547,13 @@ def build_blink_figure(frame_idx, fig_size=5.5, custom_dpi = 100):
               gaia_df, wise_df = pd.DataFrame(), pd.DataFrame()
 
         if overlay_gaia and not gaia_df.empty:
-             g_coords = SkyCoord(gaia_df['RAJ2000'].values * u.deg, gaia_df['DEJ2000'].values * u.deg)
-              ax.scatter((g_coords.ra - center_c.ra).arcsec / 6.2 + cx, (g_coords.dec - center_c.dec).arcsec / 6.2 + cy,
-                        s=90, facecolors='none', edgecolors='#00FF88', linewidths=1.2, label="Gaia DR3")
+            g_coords = SkyCoord(gaia_df['RAJ2000'].values * u.deg, gaia_df['DEJ2000'].values * u.deg)
+            ax.scatter((g_coords.ra - center_c.ra).arcsec / 6.2 + cx, (g_coords.dec - center_c.dec).arcsec / 6.2 + cy,
+            s=90, facecolors='none', edgecolors='#00FF88', linewidths=1.2, label="Gaia DR3")
         if overlay_wise and not wise_df.empty:
-               w_coords = SkyCoord(wise_df['RAJ2000'].values * u.deg, wise_df['DEJ2000'].values * u.deg)
-               ax.scatter((w_coords.ra - center_c.ra).arcsec / 6.2 + cx, (w_coords.dec - center_c.dec).arcsec / 6.2 + cy,
-                          s=110, marker='D', facecolors='none', edgecolors='#FF9900', linewidths=1.2, label="AllWISE (IR)")
+            w_coords = SkyCoord(wise_df['RAJ2000'].values * u.deg, wise_df['DEJ2000'].values * u.deg)
+            ax.scatter((w_coords.ra - center_c.ra).arcsec / 6.2 + cx, (w_coords.dec - center_c.dec).arcsec / 6.2 + cy,
+            s=110, marker='D', facecolors='none', edgecolors='#FF9900', linewidths=1.2, label="AllWISE (IR)")
         if (overlay_gaia and not gaia_df.empty) or (overlay_wise and not wise_df.empty):
             ax.legend(loc="upper right", fontsize=8)
 
