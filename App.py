@@ -821,48 +821,21 @@ with tab_spec:
     st.pyplot(fig_lc)
     plt.close(fig_lc)
 
-# --- TAB 4: INTERACTIVE 3D CDS ALADIN LITE SKY SURVEY ---
+# --- TAB 4: INTERACTIVE CDS ALADIN LITE SKY SURVEY ---
 with tab_aladin:
     st.subheader("Interactive CDS Aladin Lite Sky Survey")
-    st.caption("Pan, zoom, and switch multi-wavelength sky surveys (AllWISE, 2MASS, DSS2) on the 3D celestial sphere.")
+    st.caption("Pan, zoom, and switch multi-wavelength surveys (AllWISE, 2MASS, DSS2) on the 3D celestial sphere.")
 
     target_coord = parse_sky_coord(ra_input, dec_input)
     fov_deg = max(0.05, round(fov_arcmin / 60.0, 4))
-    target_str = f"{target_coord.ra.deg:.6f} {target_coord.dec.deg:+.6f}"
+    coord_query = f"{target_coord.ra.deg:.6f}%20{target_coord.dec.deg:+.6f}"
 
+    # Prepend "https://" right before "aladin.cds.unistra.fr" below:
+    aladin_base = "aladin.cds.unistra.fr/AladinLite/"
+    aladin_url = f"https://{aladin_base}?target={coord_query}&fov={fov_deg}&hips=CDS%2FP%2FallWISE%2Fcolor"
 
-    aladin_script = "https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js"
+    components.iframe(aladin_url, height=580, scrolling=False)
 
-    aladin_html = f"""
-    <div id="aladin-lite-div" style="width:100%; height:560px; border-radius:8px; overflow:hidden;"></div>
-    <script type="text/javascript" src="https://{aladin_script}" charset="utf-8"></script>
-    <script type="text/javascript">
-        let aladin;
-        A.init.then(() => {{
-            aladin = A.aladin('#aladin-lite-div', {{
-                survey: 'CDS/P/allWISE/color',
-                fov: {fov_deg},
-                target: '{target_str}',
-                cooFrame: 'ICRSd',
-                showReticle: true,
-                showZoomControl: true,
-                showFullscreenControl: true,
-                showLayersControl: true,
-                showGotoControl: true
-            }});
-            const cat = A.catalog({{name: 'SPHEREx Target', sourceSize: 16, color: '{accent_color}'}});
-            aladin.addCatalog(cat);
-            cat.addSources([
-                A.marker({target_coord.ra.deg:.6f}, {target_coord.dec.deg:.6f}, {{
-                    popupTitle: {json.dumps(selected_target)},
-                    popupDesc: 'RA: {ra_input}<br>Dec: {dec_input}<br>FOV: {fov_arcmin} arcmin'
-                }})
-            ]);
-        }});
-    </script>
-    """
-
-    components.html(aladin_html, height=575, scrolling=False)
 
 
 
