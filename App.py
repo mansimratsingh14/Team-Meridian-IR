@@ -821,147 +821,27 @@ with tab_spec:
     st.pyplot(fig_lc)
     plt.close(fig_lc)
     
-# --- TAB 4: INTERACTIVE ALADIN LITE SKY SURVEY (ESAC / NASA MIRRORS) ---
+# --- TAB 4: INTERACTIVE SKY CONTEXT VIEWER (ESA SKY / ALADIN FALLBACK) ---
 with tab_aladin:
-    st.subheader("Interactive Aladin Lite 3D Sky Survey (ESAC / NASA Mirrors)")
-    st.caption("Pan, zoom, and switch multi-wavelength surveys (AllWISE, 2MASS, DSS2) on the 3D celestial sphere.")
+    st.subheader("Interactive Multi-Wavelength Sky Survey")
+    st.caption("Pan, zoom, and switch multi-wavelength surveys (AllWISE, 2MASS, DSS2, Gaia) on the 3D celestial sphere.")
 
     target_coord = parse_sky_coord(ra_input, dec_input)
     fov_deg = max(0.05, round(fov_arcmin / 60.0, 4))
     ra_deg = target_coord.ra.deg
     dec_deg = target_coord.dec.deg
 
-    c_al1, c_al2 = st.columns([2.5, 1])
+    esasky_url = (
+        f"https://esa.int{ra_deg:.6f}%20{dec_deg:+.6f}"
+        f"&hips=AllWISE+color&fov={fov_deg}&cooframe=J2000&sci=true"
+    )
+
+    c_al1, c_al2, c_al3 = st.columns([2.2, 1, 1])
     c_al1.markdown(f"**Target (ICRS):** `{ra_input}, {dec_input}` (`{ra_deg:.5f}°, {dec_deg:+.5f}°`)  |  **FOV:** `{fov_arcmin}'`")
-    c_al2.link_button("Open CDS Fallback Aladin ↗", "https://unistra.fr", use_container_width=True)
+    c_al2.link_button("Open ESASky Fullscreen ↗", esasky_url, use_container_width=True)
+    c_al3.link_button("Open CDS Aladin Mirror ↗", "https://unistra.fr", use_container_width=True)
 
-    # SPHEREx FOV bounding box corners
-    half_fov_deg = (fov_arcmin / 60.0) / 2.0
-    cos_dec = max(0.1, float(np.cos(np.deg2rad(dec_deg))))
-    ra_min, ra_max = ra_deg - (half_fov_deg / cos_dec), ra_deg + (half_fov_deg / cos_dec)
-    dec_min, dec_max = dec_deg - half_fov_deg, dec_deg + half_fov_deg
-
-    gaia_pts, wise_pts = [], []
-    if overlay_gaia or overlay_wise:
-        g_df, w_df = fetch_external_catalogs(ra_input, dec_input, fov_arcmin)
-        if overlay_gaia and not g_df.empty:
-            gaia_pts = g_df[["RAJ2000", "DEJ2000"]].dropna().values.tolist()
-        if overlay_wise and not w_df.empty:
-            wise_pts = w_df[["RAJ2000", "DEJ2000"]].dropna().values.tolist()
-
-    aladin_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <base href="https://jsdelivr.net">
-        <style>
-            html, body {{
-                margin: 0;
-                padding: 0;
-                width: 100%;
-                height: 560px;
-                background-color: #161B22;
-                color: #FAFAFA;
-                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                overflow: hidden;
-            }}
-            #aladin-lite-div {{
-                width: 100%;
-                height: 560px;
-                border: 1px solid #30363D;
-                border-radius: 6px;
-                box-sizing: border-box;
-            }}
-            #status-msg {{
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                text-align: center;
-                font-size: 14px;
-                color: #8B949E;
-                z-index: 10;
-            }}
-        </style>
-        <script src="https://jsdelivr.netaladin.umd.cjs" charset="utf-8"
-                onerror="document.getElementById('status-msg').innerHTML='Failed to load Aladin CDN script.';"></script>
-    </head>
-    <body>
-        <div id="status-msg">Loading Aladin Lite Engine & ESAC AllWISE Sky Map...</div>
-        <div id="aladin-lite-div"></div>
-        <script>
-            let initialized = false;
-
-            function startAladin() {{
-                if (initialized) return;
-                const el = document.getElementById('aladin-lite-div');
-                if (!el || el.offsetWidth === 0 || el.offsetHeight === 0) return;
-                if (typeof A === 'undefined' || !A.init) return;
-
-                initialized = true;
-                A.init.then(() => {{
-                    document.getElementById('status-msg').style.display = 'none';
-                    const aladin = A.aladin('#aladin-lite-div', {{
-                        survey: 'https://esa.int',
-                        fov: {fov_deg * 1.6},
-                        target: '{ra_deg} {dec_deg}',
-                        cooFrame: 'ICRSd',
-                        showReticle: true,
-                        showZoomControl: true,
-                        showFullscreenControl: true,
-                        showLayersControl: true,
-                        showGotoControl: true
-                    }});
-
-                    // Add ESAC mirror surveys (2MASS & DSS2) to layer switcher
-                    aladin.addNewImageLayer('https://esa.int');
-                    aladin.addNewImageLayer('https://esa.int');
-
-                    // Draw SPHEREx Field-of-View Footprint Box
-                    const fovOverlay = A.graphicOverlay({{color: '{accent_color}', lineWidth: 2}});
-                    aladin.addOverlay(fovOverlay);
-                    fovOverlay.add(A.polygon([
-                        [{ra_min}, {dec_min}],
-                        [{ra_max}, {dec_min}],
-                        [{ra_max}, {dec_max}],
-                        [{ra_min}, {dec_max}]
-                    ]));
-
-                    // Gaia DR3 Overlay
-                    const gaiaCoords = {json.dumps(gaia_pts)};
-                    if (gaiaCoords.length > 0) {{
-                        const gaiaCat = A.catalog({{name: 'Gaia DR3', sourceSize: 12, color: '#00FF88', shape: 'circle'}});
-                        aladin.addCatalog(gaiaCat);
-                        gaiaCat.addSources(gaiaCoords.map(pt => A.source(pt, pt)));
-                    }}
-
-                    // AllWISE Overlay
-                    const wiseCoords = {json.dumps(wise_pts)};
-                    if (wiseCoords.length > 0) {{
-                        const wiseCat = A.catalog({{name: 'AllWISE IR', sourceSize: 12, color: '#FF9900', shape: 'diamond'}});
-                        aladin.addCatalog(wiseCat);
-                        wiseCat.addSources(wiseCoords.map(pt => A.source(pt, pt)));
-                    }}
-                }}).catch(err => {{
-                    document.getElementById('status-msg').innerHTML =
-                        'Aladin WebGL error: ' + err;
-                }});
-            }}
-
-            const checkInterval = setInterval(() => {{
-                startAladin();
-                if (initialized) clearInterval(checkInterval);
-            }}, 250);
-
-            window.addEventListener('resize', startAladin);
-        </script>
-    </body>
-    </html>
-    """
-
-    components.html(aladin_html, height=565, scrolling=False)
-
+    components.iframe(esasky_url, height=580, scrolling=False)
 
 
 
