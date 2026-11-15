@@ -144,7 +144,11 @@ def live_query_spherex(ra_str, dec_str, fov_arcmin, max_frames=4):
         st.warning("No SPHEREx images found at those exact coordinates.")
         return None, None, None
 
-    df = df.sort_values(by='t_min')
+    if 't_min' not in df.columns and 'time_bounds_lower' in df.columns:
+        df['t_min'] = df['time_bounds_lower']
+    if 't_min' in df.columns:
+        df = df.sort_values(by='t_min')
+
 
 
     
@@ -535,18 +539,24 @@ def build_blink_figure(frame_idx, fig_size=5.5, custom_dpi = 100):
         ax.axvline(cx, color=accent_color, linestyle="--", linewidth=0.9, alpha=0.7)
 
     if overlay_gaia or overlay_wise:
-        gaia_df, wise_df = fetch_external_catalogs(ra_input, dec_input, fov_arcmin)
-        center_c = parse_sky_coord(ra_input, dec_input)
+        try:
+             gaia_df, wise_df = fetch_external_catalogs(ra_input, dec_input, fov_arcmin)
+             center_c = parse_sky_coord(ra_input, dec_input)
+        except Exception:
+              st.warning("Could not plot catalog overlays for the entered coordinates.")
+              gaia_df, wise_df = pd.DataFrame(), pd.DataFrame()
+
         if overlay_gaia and not gaia_df.empty:
-            g_coords = SkyCoord(gaia_df['RAJ2000'].values * u.deg, gaia_df['DEJ2000'].values * u.deg)
-            ax.scatter((g_coords.ra - center_c.ra).arcsec / 6.2 + cx, (g_coords.dec - center_c.dec).arcsec / 6.2 + cy,
-                       s=90, facecolors='none', edgecolors='#00FF88', linewidths=1.2, label="Gaia DR3")
+             g_coords = SkyCoord(gaia_df['RAJ2000'].values * u.deg, gaia_df['DEJ2000'].values * u.deg)
+              ax.scatter((g_coords.ra - center_c.ra).arcsec / 6.2 + cx, (g_coords.dec - center_c.dec).arcsec / 6.2 + cy,
+                        s=90, facecolors='none', edgecolors='#00FF88', linewidths=1.2, label="Gaia DR3")
         if overlay_wise and not wise_df.empty:
-            w_coords = SkyCoord(wise_df['RAJ2000'].values * u.deg, wise_df['DEJ2000'].values * u.deg)
-            ax.scatter((w_coords.ra - center_c.ra).arcsec / 6.2 + cx, (w_coords.dec - center_c.dec).arcsec / 6.2 + cy,
-                       s=110, marker='D', facecolors='none', edgecolors='#FF9900', linewidths=1.2, label="AllWISE (IR)")
+               w_coords = SkyCoord(wise_df['RAJ2000'].values * u.deg, wise_df['DEJ2000'].values * u.deg)
+               ax.scatter((w_coords.ra - center_c.ra).arcsec / 6.2 + cx, (w_coords.dec - center_c.dec).arcsec / 6.2 + cy,
+                          s=110, marker='D', facecolors='none', edgecolors='#FF9900', linewidths=1.2, label="AllWISE (IR)")
         if (overlay_gaia and not gaia_df.empty) or (overlay_wise and not wise_df.empty):
             ax.legend(loc="upper right", fontsize=8)
+
 
     title = ax.set_title(f"Epoch {frame_idx + 1}/{len(view_frames)}  |  MJD {dates[frame_idx]}", color="white", fontsize=11)
     ax.set_xlabel("Delta RA (pixels, 6.2\"/px)", color="#A0A0A0")
@@ -701,6 +711,9 @@ with tab_blink:
 # --- TAB 2: CUSTOM IMAGE ADDITION & SUBTRACTION ---
 with tab_diff:
     st.subheader("Epoch Arithmetic: Subtract or Coadd Any Two Frames")
+    if len(dates) < 2:
+        st.warning("Only 1 epoch is available for this target. At least 2 epochs are required for meaningful subtraction.")
+    c_a, c_b, c_op = st.columns(3)
     c_a, c_b, c_op = st.columns(3)
     idx_a = c_a.selectbox("Select Epoch A (Baseline)", range(len(dates)), index=0, format_func=lambda i: f"Epoch {i+1} (MJD {dates[i]})")
     idx_b = c_b.selectbox("Select Epoch B (Comparison)", range(len(dates)), index=len(dates)-1, format_func=lambda i: f"Epoch {i+1} (MJD {dates[i]})")
