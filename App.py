@@ -822,40 +822,25 @@ with tab_spec:
     plt.close(fig_lc)
 
 
-# --- TAB 4: ARCHIVAL SKY SURVEY & CDS ALADIN CONTEXT ---
+# --- TAB 4: INTERACTIVE CDS ALADIN LITE 3D SKY SURVEY ---
 with tab_aladin:
-    st.subheader("Archival Multi-Wavelength Sky Survey Comparison")
-    st.caption("Compare SPHEREx infrared cutouts against archival AllWISE, 2MASS, and DSS2 surveys to verify proper motion.")
+    st.subheader("Interactive CDS Aladin Lite Sky Survey")
+    st.caption("Pan, zoom, and switch multi-wavelength surveys (AllWISE, 2MASS, DSS2) on the 3D celestial sphere.")
     target_coord = parse_sky_coord(ra_input, dec_input)
+    coord_query = f"{target_coord.ra.deg:.6f}%20{target_coord.dec.deg:+.6f}"
+    fov_deg = max(0.05, round(fov_arcmin / 60.0, 4))
 
-    s_pick, s_link = st.columns([2, 1])
-    survey_choice = s_pick.selectbox("Select Archival Sky Survey", [
-        "WISE 3.4 (AllWISE Infrared W1 - 3.4 um)",
-        "WISE 4.6 (AllWISE Infrared W2 - 4.6 um)",
-        "2MASS-K (Near-Infrared 2.2 um)",
-        "DSS2 Red (Optical Sky Survey)"
-    ])
-    skyview_key = survey_choice.split(" (")[0]
-    aladin_ext = "https://" + f"aladin.cds.unistra.fr/AladinLite/?target={target_coord.ra.deg:.5f}%20{target_coord.dec.deg:.5f}&fov={fov_arcmin / 60.0:.3f}"
-    s_link.link_button("Open Interactive CDS Aladin Portal", aladin_ext, use_container_width=True)
+    aladin_url = (
+        "https://"
+        + f"aladin.cds.unistra.fr/AladinLite/?target={coord_query}&fov={fov_deg}&survey=P%2FallWISE%2Fcolor"
+    )
 
-    arch_img = fetch_archival_survey(ra_input, dec_input, fov_arcmin, skyview_key)
-    if arch_img is not None:
-        a_vmin, a_vmax = zscale.get_limits(arch_img)
-        fig_ar, ax_ar = plt.subplots(figsize=(5.5, 5.5), dpi=high_res_dpi, facecolor=bg_hex)
-        ax_ar.set_facecolor(bg_hex)
-        ax_ar.imshow(arch_img, cmap=active_cmap, origin="lower", vmin=a_vmin, vmax=a_vmax)
-        acy, acx = arch_img.shape[0] // 2, arch_img.shape[1] // 2
-        ax_ar.axhline(acy, color=accent_color, linestyle="--", linewidth=0.9, alpha=0.7)
-        ax_ar.axvline(acx, color=accent_color, linestyle="--", linewidth=0.9, alpha=0.7)
-        ax_ar.set_title(f"{skyview_key} Archival Cutout  |  FOV {fov_arcmin}'", color="white", fontsize=11)
-        ax_ar.set_xlabel("RA Offset (pixels)", color="#A0A0A0")
-        ax_ar.set_ylabel("Dec Offset (pixels)", color="#A0A0A0")
-        fig_ar.tight_layout(pad=1.2)
-        st.pyplot(fig_ar, use_container_width=False)
-        plt.close(fig_ar)
-    else:
-        st.info("Archival SkyView cutout is temporarily unavailable for this region. Use the button above to inspect it in CDS Aladin.")
+    c_al1, c_al2 = st.columns([2.5, 1])
+    c_al1.markdown(f"**Locked Target (ICRS):** `{ra_input}, {dec_input}`  |  **FOV:** `{fov_arcmin}'` (`{fov_deg}°`)")
+    c_al2.link_button("Open Fullscreen Aladin", aladin_url, use_container_width=True)
+
+    components.iframe(aladin_url, height=560, scrolling=False)
+
 
 
 
