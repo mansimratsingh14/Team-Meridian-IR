@@ -831,10 +831,11 @@ with tab_aladin:
     ra_deg = target_coord.ra.deg
     dec_deg = target_coord.dec.deg
 
-    esasky_url = (
-        f"https://esa.int{ra_deg:.6f}%20{dec_deg:+.6f}"
-        f"&hips=AllWISE+color&fov={fov_deg}&cooframe=J2000&sci=true"
-    )
+    esasky_url = f"https://esa.int{ra_deg:.5f}%20{dec_deg:+.5f}&hips=AllWISE+color&fov={fov_deg}"
+    irsa_url = f"https://caltech.edu{ra_deg:.5f}%3B{dec_deg:.5f}%3BEQ_J2000%22%2C%22imageSizeAndUnit%22%3A%22{fov_deg}%22%7D"
+    
+
+
 
     c_al1, c_al2, c_al3 = st.columns([1.8, 1, 1])
     survey_choice = c_al1.selectbox(
@@ -949,7 +950,7 @@ with tab_notes:
 - **Target Label:** {selected_target}
 - **Coordinates (ICRS):** RA `{ra_input}`, Dec `{dec_input}`
 - **Field of View:** {fov_arcmin} arcmin (Zoom {zoom_factor}x)
-- **Epochs Analyzed:** {len(dates)} ({dates} to {dates[-1]} MJD)
+- **Epochs Analyzed:** {len(dates)} ({dates[0]} to {dates[-1]} MJD)
 - **Classification:** {classification}
 
 ## Observer Notes
