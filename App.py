@@ -186,7 +186,7 @@ def fetch_external_catalogs(ra_str, dec_str, fov_arcmin):
     rad = (fov_arcmin / 2.0) * u.arcmin
     gaia_df, wise_df = pd.DataFrame(), pd.DataFrame()
     try:
-        v_g = Vizier(columns=['RAJ2000', 'DEJ2000', 'Gmag'], row_limit=40)
+        v_g = Vizier(columns=['RAJ2000', 'DEJ2000', 'Gmag'], row_limit=40, vizier_server="vizier.cfa.harvard.edu")
         res_g = v_g.query_region(coord, radius=rad, catalog='I/355/gaiadr3')
         if len(res_g) > 0:
             gaia_df = res_g.to_pandas()
@@ -413,7 +413,7 @@ div[data-testid="stDialog"] > div[role="dialog"] {{
     max-width: 1100px !important;
 }}
 
-@import url('https://googleapis.com');
+@import url('htpps://googleapis.com');
 
 html, body, .stApp, [data-testid="stSidebar"], button, input, select, textarea, p, label, table, h1, h2, h3 {{
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
@@ -831,7 +831,7 @@ with tab_aladin:
     ra_deg = target_coord.ra.deg
     dec_deg = target_coord.dec.deg
 
-    esasky_url = f"https://esa.int{ra_deg:.5f}%20{dec_deg:+.5f}&hips=AllWISE+color&fov={fov_deg}"
+    esasky_url = f"https://sky.esa.int/esasky/?target={ra_deg:.5f}%20{dec_deg:+.5f}&hips=AllWISE+color&fov={fov_deg}"
     irsa_url = f"https://caltech.edu{ra_deg:.5f}%3B{dec_deg:.5f}%3BEQ_J2000%22%2C%22imageSizeAndUnit%22%3A%22{fov_deg}%22%7D"
     
 
@@ -849,7 +849,7 @@ with tab_aladin:
         label_visibility="collapsed",
     )
     c_al2.link_button("Open ESASky 3D ↗", esasky_url, use_container_width=True)
-    c_al3.link_button("Open CDS Aladin ↗", "https://unistra.fr", use_container_width=True)
+    c_al3.link_button("Open CDS Aladin ↗", "https://aladin.cds.unistra.fr/AladinLite/", use_container_width=True)
 
     @st.cache_data(show_spinner="Fetching NASA Archival Sky Survey Cutout...")
     def get_nasa_sky_cutout(ra_d, dec_d, fov_arc, survey_str):
