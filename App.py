@@ -822,7 +822,6 @@ with tab_spec:
     plt.close(fig_lc)
 
 # --- TAB 4: INTERACTIVE CDS ALADIN LITE SKY SURVEY ---
-# --- TAB 4: INTERACTIVE CDS ALADIN LITE SKY SURVEY ---
 with tab_aladin:
     st.subheader("Interactive CDS Aladin Lite Sky Survey")
     st.caption("Pan, zoom, and switch multi-wavelength surveys (AllWISE, 2MASS, DSS2) on the 3D celestial sphere.")
@@ -832,13 +831,22 @@ with tab_aladin:
     ra_deg = target_coord.ra.deg
     dec_deg = target_coord.dec.deg
 
-    # Compute SPHEREx FOV bounding box corners in degrees
+    # Direct fallback URL (properly URL-encoded with %20 space)
+    aladin_direct_url = (
+        f"https://unistra.fr"
+        f"?target={ra_deg:.6f}%20{dec_deg:+.6f}&fov={fov_deg}&survey=CDS%2FP%2FallWISE%2Fcolor"
+    )
+
+    c_al1, c_al2 = st.columns([2.5, 1])
+    c_al1.markdown(f"**Target (ICRS):** `{ra_input}, {dec_input}` (`{ra_deg:.5f}°, {dec_deg:+.5f}°`)  |  **FOV:** `{fov_arcmin}'`")
+    c_al2.link_button("Open in Fullscreen Aladin ↗", aladin_direct_url, use_container_width=True)
+
+    # SPHEREx FOV bounding box corners
     half_fov_deg = (fov_arcmin / 60.0) / 2.0
     cos_dec = max(0.1, float(np.cos(np.deg2rad(dec_deg))))
     ra_min, ra_max = ra_deg - (half_fov_deg / cos_dec), ra_deg + (half_fov_deg / cos_dec)
     dec_min, dec_max = dec_deg - half_fov_deg, dec_deg + half_fov_deg
 
-    # Fetch Gaia DR3 & AllWISE coordinates if overlays are toggled on in sidebar
     gaia_pts, wise_pts = [], []
     if overlay_gaia or overlay_wise:
         g_df, w_df = fetch_external_catalogs(ra_input, dec_input, fov_arcmin)
@@ -852,78 +860,110 @@ with tab_aladin:
     <html>
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             html, body {{
                 margin: 0;
                 padding: 0;
                 width: 100%;
-                height: 580px;
-                background-color: #0E1117;
+                height: 560px;
+                background-color: #161B22;
+                color: #FAFAFA;
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
                 overflow: hidden;
             }}
             #aladin-lite-div {{
                 width: 100%;
-                height: 580px;
+                height: 560px;
+                border: 1px solid #30363D;
+                border-radius: 6px;
+                box-sizing: border-box;
+            }}
+            #status-msg {{
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                text-align: center;
+                font-size: 14px;
+                color: #8B949E;
+                z-index: 10;
             }}
         </style>
-        <script type="text/javascript" src="https://unistra.fr" charset="utf-8"></script>
+        <script src="https://unistra.frapi/v3/latest/aladin.js" charset="utf-8"
+                onerror="document.getElementById('status-msg').innerHTML='Failed to load CDS Aladin script. Use the Fullscreen Aladin button above.';"></script>
     </head>
     <body>
+        <div id="status-msg">Initializing CDS Aladin Lite Sky Viewer...</div>
         <div id="aladin-lite-div"></div>
-        <script type="text/javascript">
-            A.init.then(() => {{
-                const aladin = A.aladin('#aladin-lite-div', {{
-                    survey: 'CDS/P/allWISE/color',
-                    fov: {fov_deg * 1.6},
-                    target: '{ra_deg} {dec_deg}',
-                    cooFrame: 'ICRSd',
-                    showReticle: true,
-                    showZoomControl: true,
-                    showFullscreenControl: true,
-                    showLayersControl: true,
-                    showGotoControl: true
+        <script>
+            let initialized = false;
+
+            function startAladin() {{
+                if (initialized) return;
+                const el = document.getElementById('aladin-lite-div');
+                // Wait until the Streamlit tab is visible and has non-zero width
+                if (!el || el.offsetWidth === 0 || el.offsetHeight === 0) return;
+                if (typeof A === 'undefined' || !A.init) return;
+
+                initialized = true;
+                A.init.then(() => {{
+                    document.getElementById('status-msg').style.display = 'none';
+                    const aladin = A.aladin('#aladin-lite-div', {{
+                        survey: 'CDS/P/allWISE/color',
+                        fov: {fov_deg * 1.6},
+                        target: '{ra_deg} {dec_deg}',
+                        cooFrame: 'ICRSd',
+                        showReticle: true,
+                        showZoomControl: true,
+                        showFullscreenControl: true,
+                        showLayersControl: true,
+                        showGotoControl: true
+                    }});
+
+                    // Draw SPHEREx Field-of-View Footprint Box
+                    const fovOverlay = A.graphicOverlay({{color: '{accent_color}', lineWidth: 2}});
+                    aladin.addOverlay(fovOverlay);
+                    fovOverlay.add(A.polygon([
+                        [{ra_min}, {dec_min}],
+                        [{ra_max}, {dec_min}],
+                        [{ra_max}, {dec_max}],
+                        [{ra_min}, {dec_max}]
+                    ]));
+
+                    // Gaia DR3 Overlay
+                    const gaiaCoords = {json.dumps(gaia_pts)};
+                    if (gaiaCoords.length > 0) {{
+                        const gaiaCat = A.catalog({{name: 'Gaia DR3', sourceSize: 12, color: '#00FF88', shape: 'circle'}});
+                        aladin.addCatalog(gaiaCat);
+                        gaiaCat.addSources(gaiaCoords.map(pt => A.source(pt, pt)));
+                    }}
+
+                    // AllWISE Overlay
+                    const wiseCoords = {json.dumps(wise_pts)};
+                    if (wiseCoords.length > 0) {{
+                        const wiseCat = A.catalog({{name: 'AllWISE IR', sourceSize: 12, color: '#FF9900', shape: 'diamond'}});
+                        aladin.addCatalog(wiseCat);
+                        wiseCat.addSources(wiseCoords.map(pt => A.source(pt, pt)));
+                    }}
+                }}).catch(err => {{
+                    document.getElementById('status-msg').innerHTML =
+                        'Aladin WebGL error: ' + err + '<br><br>Click <b>Open in Fullscreen Aladin</b> above.';
                 }});
+            }}
 
-                // Draw SPHEREx Field-of-View Footprint Box
-                const fovOverlay = A.graphicOverlay({{color: '{accent_color}', lineWidth: 2}});
-                aladin.addOverlay(fovOverlay);
-                fovOverlay.add(A.polygon([
-                    [{ra_min}, {dec_min}],
-                    [{ra_max}, {dec_min}],
-                    [{ra_max}, {dec_max}],
-                    [{ra_min}, {dec_max}]
-                ]));
+            // Poll until user clicks Tab 4 and container becomes visible
+            const checkInterval = setInterval(() => {{
+                startAladin();
+                if (initialized) clearInterval(checkInterval);
+            }}, 250);
 
-                // Overlay Gaia DR3 Sources (Known Optical Stars)
-                const gaiaCoords = {json.dumps(gaia_pts)};
-                if (gaiaCoords.length > 0) {{
-                    const gaiaCat = A.catalog({{name: 'Gaia DR3', sourceSize: 12, color: '#00FF88', shape: 'circle'}});
-                    aladin.addCatalog(gaiaCat);
-                    gaiaCat.addSources(gaiaCoords.map(pt => A.source(pt, pt)));
-                }}
-
-                // Overlay AllWISE Sources (Known Infrared Sources)
-                const wiseCoords = {json.dumps(wise_pts)};
-                if (wiseCoords.length > 0) {{
-                    const wiseCat = A.catalog({{name: 'AllWISE IR', sourceSize: 12, color: '#FF9900', shape: 'diamond'}});
-                    aladin.addCatalog(wiseCat);
-                    wiseCat.addSources(wiseCoords.map(pt => A.source(pt, pt)));
-                }}
-
-                // Force WebGL canvas resize when Tab 4 becomes visible
-                const container = document.getElementById('aladin-lite-div');
-                const observer = new ResizeObserver(() => {{
-                    window.dispatchEvent(new Event('resize'));
-                }});
-                observer.observe(container);
-            }});
+            window.addEventListener('resize', startAladin);
         </script>
     </body>
     </html>
     """
 
-    components.html(aladin_html, height=585, scrolling=False)
+    components.html(aladin_html, height=565, scrolling=False)
 
 
 
