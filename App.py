@@ -820,9 +820,10 @@ with tab_spec:
     ax_lc.grid(True, alpha=0.15)
     st.pyplot(fig_lc)
     plt.close(fig_lc)
-# --- TAB 4: INTERACTIVE CDS ALADIN LITE SKY SURVEY ---
+    
+# --- TAB 4: INTERACTIVE ALADIN LITE SKY SURVEY (ESAC / NASA MIRRORS) ---
 with tab_aladin:
-    st.subheader("Interactive CDS Aladin Lite Sky Survey")
+    st.subheader("Interactive Aladin Lite 3D Sky Survey (ESAC / NASA Mirrors)")
     st.caption("Pan, zoom, and switch multi-wavelength surveys (AllWISE, 2MASS, DSS2) on the 3D celestial sphere.")
 
     target_coord = parse_sky_coord(ra_input, dec_input)
@@ -830,14 +831,9 @@ with tab_aladin:
     ra_deg = target_coord.ra.deg
     dec_deg = target_coord.dec.deg
 
-    aladin_direct_url = (
-        f"https://unistra.fr"
-        f"?target={ra_deg:.6f}%20{dec_deg:+.6f}&fov={fov_deg}"
-    )
-
     c_al1, c_al2 = st.columns([2.5, 1])
     c_al1.markdown(f"**Target (ICRS):** `{ra_input}, {dec_input}` (`{ra_deg:.5f}°, {dec_deg:+.5f}°`)  |  **FOV:** `{fov_arcmin}'`")
-    c_al2.link_button("Open in Fullscreen Aladin ↗", aladin_direct_url, use_container_width=True)
+    c_al2.link_button("Open CDS Fallback Aladin ↗", "https://unistra.fr", use_container_width=True)
 
     # SPHEREx FOV bounding box corners
     half_fov_deg = (fov_arcmin / 60.0) / 2.0
@@ -849,16 +845,16 @@ with tab_aladin:
     if overlay_gaia or overlay_wise:
         g_df, w_df = fetch_external_catalogs(ra_input, dec_input, fov_arcmin)
         if overlay_gaia and not g_df.empty:
-            gaia_pts = g_df[['RAJ2000', 'DEJ2000']].dropna().values.tolist()
+            gaia_pts = g_df[["RAJ2000", "DEJ2000"]].dropna().values.tolist()
         if overlay_wise and not w_df.empty:
-            wise_pts = w_df[['RAJ2000', 'DEJ2000']].dropna().values.tolist()
+            wise_pts = w_df[["RAJ2000", "DEJ2000"]].dropna().values.tolist()
 
     aladin_html = f"""
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="utf-8">
-        <base href="https://unistra.frapi/v3/latest/">
+        <base href="https://jsdelivr.net">
         <style>
             html, body {{
                 margin: 0;
@@ -888,11 +884,11 @@ with tab_aladin:
                 z-index: 10;
             }}
         </style>
-        <script src="https://unistra.frapi/v3/latest/aladin.js" charset="utf-8"
-                onerror="document.getElementById('status-msg').innerHTML='Failed to load CDS Aladin script. Use the Fullscreen Aladin button above.';"></script>
+        <script src="https://jsdelivr.netaladin.umd.cjs" charset="utf-8"
+                onerror="document.getElementById('status-msg').innerHTML='Failed to load Aladin CDN script.';"></script>
     </head>
     <body>
-        <div id="status-msg">Initializing CDS Aladin Lite Sky Viewer...</div>
+        <div id="status-msg">Loading Aladin Lite Engine & ESAC AllWISE Sky Map...</div>
         <div id="aladin-lite-div"></div>
         <script>
             let initialized = false;
@@ -917,6 +913,10 @@ with tab_aladin:
                         showLayersControl: true,
                         showGotoControl: true
                     }});
+
+                    // Add ESAC mirror surveys (2MASS & DSS2) to layer switcher
+                    aladin.addNewImageLayer('https://esa.int');
+                    aladin.addNewImageLayer('https://esa.int');
 
                     // Draw SPHEREx Field-of-View Footprint Box
                     const fovOverlay = A.graphicOverlay({{color: '{accent_color}', lineWidth: 2}});
@@ -945,7 +945,7 @@ with tab_aladin:
                     }}
                 }}).catch(err => {{
                     document.getElementById('status-msg').innerHTML =
-                        'Aladin WebGL error: ' + err + '<br><br>Click <b>Open in Fullscreen Aladin</b> above.';
+                        'Aladin WebGL error: ' + err;
                 }});
             }}
 
